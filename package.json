@@ -1,0 +1,29 @@
+{
+  "name": "court-replay-server",
+  "version": "1.0.0",
+  "description": "Court Replay System - Node.js/Express server",
+  "main": "server/src/index.js",
+  "scripts": {
+    "start": "node server/src/index.js",
+    "dev": "node --watch server/src/index.js",
+    "test": "jest --coverage"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.1.0",
+    "express-session": "^1.18.1",
+    "bcryptjs": "^3.0.2",
+    "axios": "^1.7.9",
+    "dotenv": "^16.4.7",
+    "hpp": "^0.2.3",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

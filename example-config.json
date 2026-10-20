@@ -1,0 +1,82 @@
+{
+  "app": {
+    "name": "Court Replay System",
+    "version": "1.0.0",
+    "env": "development"
+  },
+  "server": {
+    "port": 3000,
+    "host": "0.0.0.0",
+    "trustProxy": false,
+    "sessionSecret": "change-me-in-production",
+    "cookieSecure": false,
+    "cookieMaxAge": 86400000
+  },
+  "panel": {
+    "disabled": false
+  },
+  "camera": {
+    "name": "DAFU-CAMERA",
+    "ip": "192.168.3.100",
+    "user": "",
+    "password": "",
+    "rtspUrl": ""
+  },
+  "buffer": {
+    "segmentSeconds": 2,
+    "preEventSeconds": 15,
+    "postEventSeconds": 15,
+    "clipDurationSeconds": 30,
+    "maxBufferSegments": 60
+  },
+  "storage": {
+    "basePath": "./storage",
+    "bufferPath": "./storage/buffer",
+    "clipsPath": "./storage/clips",
+    "metadataPath": "./storage/metadata",
+    "maxStorageGB": 50
+  },
+  "notebookAgent": {
+    "host": "127.0.0.1",
+    "port": 8765,
+    "timeout": 30000,
+    "sharedSecret": ""
+  },
+  "security": {
+    "hmacAlgorithm": "sha256",
+    "timestampTolerance": 300000,
+    "maxBodySize": "10mb"
+  },
+  "auth": {
+    "enabled": false
+  },
+  "rateLimit": {
+    "global": {
+      "windowMs": 900000,
+      "limit": 120
+    },
+    "login": {
+      "windowMs": 900000,
+      "limit": 10
+    },
+    "trigger": {
+      "windowMs": 60000,
+      "limit": 10
+    },
+    "download": {
+      "windowMs": 60000,
+      "limit": 30
+    }
+  },
+  "cleanup": {
+    "enabled": true,
+    "hour": 0,
+    "minute": 0,
+    "timezone": "America/Sao_Paulo"
+  },
+  "logging": {
+    "level": "info",
+    "format": "structured",
+    "file": "./logs/agent.log"
+  }
+}

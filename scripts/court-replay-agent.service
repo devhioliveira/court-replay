@@ -1,0 +1,40 @@
+[Unit]
+Description=Court Replay Agent - Video capture and clip management
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=courtreplay
+Group=courtreplay
+SupplementaryGroups=input
+WorkingDirectory=/opt/court-replay
+ExecStart=/opt/court-replay/venv/bin/python -m agent
+Restart=on-failure
+RestartSec=5
+StartLimitInterval=60s
+StartLimitBurst=3
+
+# Environment
+EnvironmentFile=-/etc/court-replay/env
+Environment=PYTHONUNBUFFERED=1
+Environment=TZ=America/Sao_Paulo
+
+# Security
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/court-replay/storage /opt/court-replay/logs
+ProtectHome=true
+PrivateTmp=true
+
+# Resource limits
+MemoryMax=512M
+CPUQuota=50%
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=court-replay-agent
+
+[Install]
+WantedBy=multi-user.target

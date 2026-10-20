@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Config (real config should not be committed)
+/config.json
+
+# Storage (dados em runtime - NAO o pacote agent/storage, que e codigo!)
+# Com barra no inicio para nao casar com qualquer pasta "storage" em
+# qualquer nivel (ex. agent/storage/). Sem a barra, o git ignore engoliu
+# o codigo-fonte do agente sem avisar - foi exatamente isso que aconteceu
+# e perdeu o modulo agent/storage/manager.py numa formatacao anterior.
+/storage/
+/logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temporary
+tmp/
+temp/
+*.tmp
+
+venv/
+.venv/
