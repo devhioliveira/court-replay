@@ -62,7 +62,7 @@ O navegador conversa **somente com o servidor**. Os vídeos ficam guardados **no
 | **Servidor** | Node.js 20+ |
 | **Rede** | O notebook alcança a câmera e o servidor alcança o notebook |
 
-> O agente também possui um handler de mouse para Windows, mas o fluxo de instalação documentado aqui (serviço systemd) é para Linux.
+> O agente também funciona no **Windows**. Veja o guia de produção em **[docs-windows.md](docs-windows.md)**. O fluxo documentado abaixo (serviço systemd) é para Linux.
 
 ---
 

@@ -109,6 +109,10 @@ class Config:
 
         # Override with environment variables
         config._load_env()
+
+        # Make "now" independent of the OS timezone (see agent/timeutil.py).
+        from agent import timeutil
+        timeutil.configure(config.timezone)
         return config
 
     def _merge_section(self, section_obj, data: dict) -> None:

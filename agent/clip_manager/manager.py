@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
+from agent import timeutil
 from agent.config import Config
 from agent.logger import ContextLogger
 from agent.state import AgentState, StateManager
@@ -47,7 +48,7 @@ class ClipManager:
         self._logger.info("Clip creation started")
 
         try:
-            trigger_time = datetime.now()
+            trigger_time = timeutil.now()
             clip_id = self._generate_clip_id(trigger_time)
 
             # Clip is always exactly clip_duration_seconds long, centred on the
@@ -121,7 +122,7 @@ class ClipManager:
 
         result = []
         for seg in segments:
-            seg_end = datetime.fromtimestamp(seg.stat().st_mtime)
+            seg_end = timeutil.from_timestamp(seg.stat().st_mtime)
             seg_start = seg_end - seg_delta
             # Overlap test between [seg_start, seg_end] and [start_time, end_time]
             if seg_end >= start_time and seg_start <= end_time:
@@ -255,17 +256,46 @@ class ClipManager:
         return metadata
 
     def list_clips(self, start_time: Optional[str] = None, end_time: Optional[str] = None) -> list[dict]:
-        """List all clips, optionally filtered by time range."""
+        """List clips, optionally filtered by time of day.
+
+        ``start_time`` / ``end_time`` are "HH:MM" (what the panel sends) and are
+        compared with the clip's trigger time of day in the configured timezone;
+        the end minute is inclusive. Full ISO timestamps are accepted too.
+        """
         all_metadata = self._storage.get_all_metadata()
 
-        if start_time:
-            all_metadata = [m for m in all_metadata if m.get("triggerTime", "") >= start_time]
-        if end_time:
-            all_metadata = [m for m in all_metadata if m.get("triggerTime", "") <= end_time]
+        def trigger_dt(m: dict):
+            return timeutil.parse_iso(m.get("triggerTime", ""))
 
-        # Sort by trigger time descending
-        all_metadata.sort(key=lambda m: m.get("triggerTime", ""), reverse=True)
-        return all_metadata
+        def bound(value: Optional[str], is_end: bool):
+            """Return a predicate-ready bound: ('tod', minutes) or ('dt', datetime)."""
+            if not value:
+                return None
+            minutes = timeutil.parse_time_of_day(value)
+            if minutes is not None:
+                return ("tod", minutes + (1 if is_end else 0))  # end: up to HH:MM:59
+            parsed = timeutil.parse_iso(value)
+            return ("dt", parsed) if parsed else None
+
+        lo, hi = bound(start_time, False), bound(end_time, True)
+
+        def keep(m: dict) -> bool:
+            dt = trigger_dt(m)
+            if dt is None:
+                return not (lo or hi)
+            tod = dt.hour * 60 + dt.minute + dt.second / 60
+            if lo and (tod < lo[1] if lo[0] == "tod" else dt < lo[1]):
+                return False
+            if hi and (tod >= hi[1] if hi[0] == "tod" else dt > hi[1]):
+                return False
+            return True
+
+        result = [m for m in all_metadata if keep(m)]
+
+        # Newest first; unparseable times sort last.
+        epoch = timeutil.parse_iso("1970-01-01T00:00:00+00:00")
+        result.sort(key=lambda m: trigger_dt(m) or epoch, reverse=True)
+        return result
 
     def delete_clip(self, clip_id: str) -> bool:
         """Delete a clip by ID."""

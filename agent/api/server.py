@@ -9,6 +9,7 @@ from typing import Optional
 
 from aiohttp import web
 
+from agent import timeutil
 from agent.config import Config
 from agent.logger import ContextLogger
 from agent.state import AgentState, StateManager
@@ -120,7 +121,7 @@ class APIServer:
             "status": "ok",
             "state": self._state.current.value,
             "ffmpegRunning": self._ffmpeg.is_running,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": timeutil.now().isoformat(),
         })
 
     async def _handle_status(self, request: web.Request) -> web.Response:
@@ -133,7 +134,7 @@ class APIServer:
             "ffmpegRunning": self._ffmpeg.is_running,
             "storage": usage,
             "bufferSegments": len(storage.get_buffer_segments()),
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": timeutil.now().isoformat(),
         })
 
     async def _handle_list_clips(self, request: web.Request) -> web.Response:
