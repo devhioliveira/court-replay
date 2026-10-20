@@ -1,6 +1,6 @@
 # 🏐 Court Replay
 
-Aperte um botão na quadra e os **30 segundos** ao redor do momento viram um clip de vídeo. Os alunos acessam um **painel público** para rever, assistir e baixar as próprias jogadas.
+Aperte um botão na quadra e os **30 segundos anteriores** ao clique viram um clip de vídeo. Os alunos acessam um **painel público** para rever, assistir e baixar as próprias jogadas.
 
 ## Sumário
 
@@ -25,8 +25,8 @@ Aperte um botão na quadra e os **30 segundos** ao redor do momento viram um cli
 
 1. A câmera filma a quadra o tempo todo (o agente mantém um buffer de segmentos curtos).
 2. Alguém aperta o **botão do meio do mouse** conectado ao notebook.
-3. O sistema junta **15 s antes** e **15 s depois** do clique em um único `.mp4` (sem re-encodar).
-4. Em cerca de 15 segundos o clip aparece no painel web.
+3. O sistema junta os **últimos 30 s antes** do clique em um único `.mp4` (sem re-encodar).
+4. Em cerca de 5 segundos o clip aparece no painel web.
 5. O aluno **assiste ou baixa** o vídeo.
 
 > ⚠️ Os clips são apagados automaticamente todo dia às **00:00** (fuso `America/Sao_Paulo`). Baixe o que precisar antes disso.
@@ -62,7 +62,7 @@ O navegador conversa **somente com o servidor**. Os vídeos ficam guardados **no
 | **Servidor** | Node.js 20+ |
 | **Rede** | O notebook alcança a câmera e o servidor alcança o notebook |
 
-> O agente também funciona no **Windows**. Veja o guia de produção em **[docs-windows.md](docs-windows.md)**. O fluxo documentado abaixo (serviço systemd) é para Linux.
+> O agente também possui um handler de mouse para Windows, mas o fluxo de instalação documentado aqui (serviço systemd) é para Linux.
 
 ---
 
@@ -184,8 +184,8 @@ A configuração vem de duas fontes: o **`.env`** (segredos e endereços) e o **
 
 | Opção | Padrão | O que faz |
 |---|---|---|
-| `buffer.preEventSeconds` | 15 | Segundos gravados antes do clique |
-| `buffer.postEventSeconds` | 15 | Segundos gravados depois do clique |
+| `buffer.preEventSeconds` | 30 | Segundos gravados antes do clique |
+| `buffer.postEventSeconds` | 0 | Segundos gravados depois do clique (0 = nada depois) |
 | `buffer.segmentSeconds` | 2 | Duração de cada segmento do buffer |
 | `buffer.maxBufferSegments` | 60 | Quantos segmentos o buffer mantém |
 | `storage.maxStorageGB` | 50 | Limite de armazenamento usado como referência no status |
@@ -199,7 +199,7 @@ A configuração vem de duas fontes: o **`.env`** (segredos e endereços) e o **
 
 1. Abra o painel: `http://IP_DO_SERVIDOR:3000`.
 2. Aperte o **botão do meio do mouse** quando quiser gravar um replay.
-3. Espere uns **15 segundos** e clique em **Atualizar**.
+3. Espere uns **5 segundos** e clique em **Atualizar**.
 4. O clip aparece na lista. Clique em **Visualizar** ou **Baixar**.
 
 Dá para filtrar por horário com os campos **De / Até** e o botão **Pesquisar**.
@@ -240,7 +240,7 @@ Todo acesso passa a mostrar **"Site temporariamente indisponível"**. A gravaç�
 |---|---|
 | Painel mostra "Notebook Offline" | Confira se o agente está rodando, se o `NOTEBOOK_HOST` está certo e se o `NOTEBOOK_SHARED_SECRET` é igual nas duas máquinas |
 | Câmera não conecta | Teste com `ping IP_DA_CAMERA` e confira usuário, senha e a URL RTSP |
-| Clip não aparece | Aguarde ~15 segundos e clique em **Atualizar** |
+| Clip não aparece | Aguarde ~5 segundos e clique em **Atualizar** |
 | Botão do meio não funciona (Linux) | Qualquer mouse com botão do meio é aceito (só esse botão dispara). Confira se o serviço tem acesso aos dispositivos: `sudo usermod -aG input courtreplay` e reinicie. Veja no log a linha "Listening to input device" |
 | FFmpeg não encontrado | `sudo apt install -y ffmpeg` |
 

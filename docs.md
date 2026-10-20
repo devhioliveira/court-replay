@@ -8,7 +8,7 @@ Guia simples para instalar e usar o sistema.
 
 1. Abra o painel: `http://IP_DO_SERVIDOR:3000`
 2. Aperte o **botão do meio do mouse** quando quiser gravar um replay.
-3. Espere uns **15 segundos** e clique em **Atualizar**.
+3. Espere uns **5 segundos** e clique em **Atualizar**.
 4. O clip aparece na lista. Clique em **Visualizar** ou **Baixar**.
 
 Dá para filtrar por horário usando os campos **De / Até** e o botão **Pesquisar**.
@@ -99,8 +99,8 @@ No arquivo `config.json`:
 
 | Opção | Padrão | O que faz |
 |---|---|---|
-| `buffer.preEventSeconds` | 15 | Segundos gravados antes do clique |
-| `buffer.postEventSeconds` | 15 | Segundos gravados depois do clique |
+| `buffer.preEventSeconds` | 30 | Segundos gravados antes do clique |
+| `buffer.postEventSeconds` | 0 | Segundos gravados depois do clique (0 = nada depois) |
 | `cleanup.hour` / `minute` | 0 / 0 | Horário da limpeza diária |
 | `panel.disabled` | false | Tira o painel do ar (o mesmo que `DISABLE_PANEL=true`) |
 
@@ -139,7 +139,7 @@ Use quando o sistema estiver em manutenção ou quando o notebook/câmera estive
 |---|---|
 | Painel mostra "Notebook Offline" | Confira se o agente está rodando, se o `NOTEBOOK_HOST` está certo e se as senhas (`NOTEBOOK_SHARED_SECRET`) são iguais |
 | Câmera não conecta | Teste com `ping IP_DA_CAMERA` e confira usuário, senha e a URL RTSP |
-| Clip não aparece | Aguarde ~15 segundos e clique em **Atualizar** |
+| Clip não aparece | Aguarde ~5 segundos e clique em **Atualizar** |
 | Botão do meio não funciona (Linux) | Rode `sudo usermod -aG input courtreplay` e reinicie o serviço |
 | FFmpeg não encontrado | `sudo apt install -y ffmpeg` |
 

@@ -44,9 +44,8 @@ class CameraConfig:
 @dataclass
 class BufferConfig:
     segment_seconds: int = 2
-    pre_event_seconds: int = 15
-    post_event_seconds: int = 15
-    clip_duration_seconds: int = 30
+    pre_event_seconds: int = 30
+    post_event_seconds: int = 0
     max_buffer_segments: int = 60
 
 
@@ -109,10 +108,6 @@ class Config:
 
         # Override with environment variables
         config._load_env()
-
-        # Make "now" independent of the OS timezone (see agent/timeutil.py).
-        from agent import timeutil
-        timeutil.configure(config.timezone)
         return config
 
     def _merge_section(self, section_obj, data: dict) -> None:

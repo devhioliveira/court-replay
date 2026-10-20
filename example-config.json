@@ -24,9 +24,8 @@
   },
   "buffer": {
     "segmentSeconds": 2,
-    "preEventSeconds": 15,
-    "postEventSeconds": 15,
-    "clipDurationSeconds": 30,
+    "preEventSeconds": 30,
+    "postEventSeconds": 0,
     "maxBufferSegments": 60
   },
   "storage": {

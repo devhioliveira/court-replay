@@ -3,7 +3,6 @@ import asyncio
 from datetime import datetime, timedelta
 from typing import Optional
 
-from agent import timeutil
 from agent.config import Config
 from agent.logger import ContextLogger
 from agent.storage.manager import StorageManager
@@ -56,7 +55,7 @@ class CleanupScheduler:
         """Main scheduler loop that waits until midnight."""
         while self._running:
             try:
-                now = timeutil.now()
+                now = datetime.now()
                 target = now.replace(
                     hour=self._config.cleanup.hour,
                     minute=self._config.cleanup.minute,
@@ -92,7 +91,7 @@ class CleanupScheduler:
 
     async def _execute_cleanup(self):
         """Execute the daily cleanup."""
-        self._logger.info("Daily cleanup started", timestamp=timeutil.now().isoformat())
+        self._logger.info("Daily cleanup started", timestamp=datetime.now().isoformat())
 
         try:
             result = self._storage.cleanup_daily()

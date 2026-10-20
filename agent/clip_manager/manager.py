@@ -10,7 +10,6 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
-from agent import timeutil
 from agent.config import Config
 from agent.logger import ContextLogger
 from agent.state import AgentState, StateManager
@@ -48,16 +47,17 @@ class ClipManager:
         self._logger.info("Clip creation started")
 
         try:
-            trigger_time = timeutil.now()
+            trigger_time = datetime.now()
             clip_id = self._generate_clip_id(trigger_time)
 
-            # Clip is always exactly clip_duration_seconds long, centred on the
-            # trigger: half before, half after.
-            duration = self._config.buffer.clip_duration_seconds
+            # The clip covers the last ``pre_event_seconds`` BEFORE the button
+            # press (default 30s) plus ``post_event_seconds`` after it
+            # (default 0: nothing recorded after the press).
             pre_seconds = self._config.buffer.pre_event_seconds
             post_seconds = self._config.buffer.post_event_seconds
+            duration = pre_seconds + post_seconds
             start_time = trigger_time - timedelta(seconds=pre_seconds)
-            end_time = start_time + timedelta(seconds=duration)
+            end_time = trigger_time + timedelta(seconds=post_seconds)
 
             self._logger.info(
                 "Trigger registered",
@@ -67,9 +67,13 @@ class ClipManager:
                 duration=duration,
             )
 
-            # Wait for the post-event period so those segments exist on disk.
-            self._logger.info(f"Waiting {post_seconds}s for post-event capture...")
-            await asyncio.sleep(post_seconds)
+            # The segment that contains the press is still being written by
+            # FFmpeg. Wait for it to be closed (plus a small margin) so the
+            # final seconds before the press are fully on disk. With
+            # post_event_seconds = 0 this is the only wait.
+            wait_seconds = post_seconds + self._config.buffer.segment_seconds + 1
+            self._logger.info(f"Waiting {wait_seconds}s for the last segment to close...")
+            await asyncio.sleep(wait_seconds)
 
             # Find relevant segments
             segments = self._find_segments_for_range(start_time, end_time)
@@ -122,7 +126,7 @@ class ClipManager:
 
         result = []
         for seg in segments:
-            seg_end = timeutil.from_timestamp(seg.stat().st_mtime)
+            seg_end = datetime.fromtimestamp(seg.stat().st_mtime)
             seg_start = seg_end - seg_delta
             # Overlap test between [seg_start, seg_end] and [start_time, end_time]
             if seg_end >= start_time and seg_start <= end_time:
@@ -139,15 +143,23 @@ class ClipManager:
     ) -> Optional[Path]:
         """Create a clip file from segments using the FFmpeg concat demuxer.
 
-        The clip is trimmed to exactly ``clip_duration_seconds`` with ``-t``.
-        Combined with ``-c:v copy`` this needs no re-encoding, so the cut lands
-        on the nearest keyframe (within ~0.1s of the target). The audio stream
-        is never mapped, so it is not even decoded.
+        The clip is trimmed with ``-t`` so it ends at ``end_time`` (the moment
+        of the press when post_event_seconds = 0). Combined with ``-c:v copy``
+        this needs no re-encoding. The audio stream is never mapped, so it is
+        not even decoded.
         """
         if not segments:
             return None
 
-        duration = self._config.buffer.clip_duration_seconds
+        # Segments are cut on keyframes, so the first one starts a bit before
+        # ``start_time``. Start the clip at that segment's beginning (exact, no
+        # re-encode) and stop exactly at ``end_time``: the clip may carry up to
+        # one segment of extra footage at the START, but never runs past the
+        # button press.
+        seg_delta = timedelta(seconds=self._config.buffer.segment_seconds)
+        first_seg_start = datetime.fromtimestamp(segments[0].stat().st_mtime) - seg_delta
+        duration = (end_time - min(first_seg_start, start_time)).total_seconds()
+        duration = max(duration, 1.0)
 
         # Build concat file list
         concat_file = self._storage.buffer_path / f"concat_{clip_id}.txt"
@@ -168,7 +180,7 @@ class ClipManager:
             "-f", "concat",
             "-safe", "0",
             "-i", str(concat_file),
-            "-t", str(duration),      # hard 30s limit
+            "-t", f"{duration:.3f}",  # ends at the press (+ post, if any)
             "-map", "0:v:0",          # video only - audio is never decoded
             "-an",
             "-c:v", "copy",           # no re-encode
@@ -220,7 +232,7 @@ class ClipManager:
             )
             return round(float(out.stdout.strip()), 3)
         except Exception:
-            return float(self._config.buffer.clip_duration_seconds)
+            return float(self._config.buffer.pre_event_seconds + self._config.buffer.post_event_seconds)
 
     def _build_metadata(
         self,
@@ -256,46 +268,17 @@ class ClipManager:
         return metadata
 
     def list_clips(self, start_time: Optional[str] = None, end_time: Optional[str] = None) -> list[dict]:
-        """List clips, optionally filtered by time of day.
-
-        ``start_time`` / ``end_time`` are "HH:MM" (what the panel sends) and are
-        compared with the clip's trigger time of day in the configured timezone;
-        the end minute is inclusive. Full ISO timestamps are accepted too.
-        """
+        """List all clips, optionally filtered by time range."""
         all_metadata = self._storage.get_all_metadata()
 
-        def trigger_dt(m: dict):
-            return timeutil.parse_iso(m.get("triggerTime", ""))
+        if start_time:
+            all_metadata = [m for m in all_metadata if m.get("triggerTime", "") >= start_time]
+        if end_time:
+            all_metadata = [m for m in all_metadata if m.get("triggerTime", "") <= end_time]
 
-        def bound(value: Optional[str], is_end: bool):
-            """Return a predicate-ready bound: ('tod', minutes) or ('dt', datetime)."""
-            if not value:
-                return None
-            minutes = timeutil.parse_time_of_day(value)
-            if minutes is not None:
-                return ("tod", minutes + (1 if is_end else 0))  # end: up to HH:MM:59
-            parsed = timeutil.parse_iso(value)
-            return ("dt", parsed) if parsed else None
-
-        lo, hi = bound(start_time, False), bound(end_time, True)
-
-        def keep(m: dict) -> bool:
-            dt = trigger_dt(m)
-            if dt is None:
-                return not (lo or hi)
-            tod = dt.hour * 60 + dt.minute + dt.second / 60
-            if lo and (tod < lo[1] if lo[0] == "tod" else dt < lo[1]):
-                return False
-            if hi and (tod >= hi[1] if hi[0] == "tod" else dt > hi[1]):
-                return False
-            return True
-
-        result = [m for m in all_metadata if keep(m)]
-
-        # Newest first; unparseable times sort last.
-        epoch = timeutil.parse_iso("1970-01-01T00:00:00+00:00")
-        result.sort(key=lambda m: trigger_dt(m) or epoch, reverse=True)
-        return result
+        # Sort by trigger time descending
+        all_metadata.sort(key=lambda m: m.get("triggerTime", ""), reverse=True)
+        return all_metadata
 
     def delete_clip(self, clip_id: str) -> bool:
         """Delete a clip by ID."""

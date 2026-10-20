@@ -40,8 +40,8 @@ export const config = {
   },
   buffer: {
     segmentSeconds: fileConfig.buffer?.segmentSeconds || 2,
-    preEventSeconds: fileConfig.buffer?.preEventSeconds || 10,
-    postEventSeconds: fileConfig.buffer?.postEventSeconds || 10,
+    preEventSeconds: fileConfig.buffer?.preEventSeconds ?? 30,
+    postEventSeconds: fileConfig.buffer?.postEventSeconds ?? 0,
   },
   storage: {
     basePath: fileConfig.storage?.basePath || './storage',

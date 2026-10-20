@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="empty-state">
           ${ICON_EMPTY}
           <h3>Nenhum replay por aqui</h3>
-          <p>Nada foi gravado nesse intervalo. Aperte o botão do meio do mouse na quadra e atualize em ~15 segundos.</p>
+          <p>Nada foi gravado nesse intervalo. Aperte o botão do meio do mouse na quadra e atualize em ~5 segundos.</p>
         </div>`;
       return;
     }
